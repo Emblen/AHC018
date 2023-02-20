@@ -95,24 +95,20 @@ struct LocalTester
 
 struct Solver
 {
-    int n, w, k, c; 
+    int n, w, c; 
     vector<vec2> WaterPos, HousePos;
     Field field;
-    // Solver(int N, int W, int C, int K, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
-    // : n(N), c(C), w(W), k(K), WaterPos(source_pos), HousePos(house_pos), field(N, C) { }
+    Solver(int N, int W, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
+    : n(N), c(C), w(W), WaterPos(source_pos), HousePos(house_pos), field(N, C) { }
 //Local    
-    vector<vector<int>> DestLevel;
-    LocalTester localtester;
-    Solver(int N, int W, int C, int K, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), c(C), w(W), k(K), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel) { }
+    // vector<vector<int>> DestLevel;
+    // LocalTester localtester;
+    // Solver(int N, int W, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
+    // : n(N), c(C), w(W), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel) { }
 
     void solve(){
         cout << "#solve start" << endl;
-        priority_queue<pair<int, int>> Pque;
-        for(auto house:HousePos){
-            vec2 source = WaterPos[NearestWater(house)];
-        }
-        
+
         for(auto house:HousePos){
             vec2 source = WaterPos[NearestWater(house)]; //最も近い水源を見つける
             move(house, source);
@@ -145,11 +141,11 @@ struct Solver
     void destruct(int row, int column) {
         const int power = 50;
 //Serve
-        // while (!field.is_broken[row][column]) {
-        //     Response result = field.query(row, column, power);
+        while (!field.is_broken[row][column]) {
+            Response result = field.query(row, column, power);
 //Local
-        while (!localtester.is_broken[row][column]) {
-            Response result = localtester.LocalQuery(row, column, power);
+        // while (!localtester.is_broken[row][column]) {
+            // Response result = localtester.LocalQuery(row, column, power);
             if (result == Response::finish) {
                 cerr << "#total_cost=" << field.total_cost << endl;
                 exit(0);
@@ -164,34 +160,34 @@ struct Solver
 
 int main(){
 //Local
-    ifstream InputFile(inputfile);
-    int n, w, k, c;
-    InputFile >> n >> w >> k >> c;
-
-    vector<vector<int>> DestLevel(n, vector<int>(n));
-    vector<vec2> WaterPos(w), HousePos(k); 
-
-    for(int i=0; i<n; i++){
-        for(int j=0; j<n; j++){
-            InputFile >> DestLevel[i][j];
-        }
-    }
-    for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
-    for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
-    for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
-    for(auto v:HousePos) cout << v.y << " " << v.x << endl;
-    for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
-    Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
-    solver.solve();
-
-//Serve
+    // ifstream InputFile(inputfile);
     // int n, w, k, c;
-    // cin >> n >> w >> k >> c;
+    // InputFile >> n >> w >> k >> c;
+
+    // vector<vector<int>> DestLevel(n, vector<int>(n));
     // vector<vec2> WaterPos(w), HousePos(k); 
-    // for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
-    // for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
-    // Solver solver(n, w, k, c, WaterPos, HousePos);
+
+    // for(int i=0; i<n; i++){
+    //     for(int j=0; j<n; j++){
+    //         InputFile >> DestLevel[i][j];
+    //     }
+    // }
+    // for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
+    // for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
+    // for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
+    // for(auto v:HousePos) cout << v.y << " " << v.x << endl;
+    // for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
+    // Solver solver(n, w, c, WaterPos, HousePos, DestLevel);
     // solver.solve();
+
+//提出
+    int n, w, k, c;
+    cin >> n >> w >> k >> c;
+    vector<vec2> WaterPos(w), HousePos(k); 
+    for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
+    for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
+    Solver solver(n, w, c, WaterPos, HousePos);
+    solver.solve();
 
     cout << "#finished" << endl;
     return 0;
