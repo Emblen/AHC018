@@ -7,13 +7,20 @@
 #include <cmath>
 #include <set>
 #include <queue>
+#include <tuple>
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed005w3k5.txt";
-string outputfile = "seed005w3k5out.txt";
+string inputfile = "seed005w1k10.txt";
+string outputfile = "seed005w1k10out.txt";
 
-struct vec2 {int y, x;};
+struct vec2 
+{
+    int y, x;
+    bool operator<(const vec2& v2) const{
+        return x == v2.x ? y<v2.y : x<v2.x;
+    }
+};
 enum class Response {not_broken, broken, finish, invalid};
 
 struct Field
@@ -103,24 +110,32 @@ struct Solver
 //Local    
     vector<vector<int>> DestLevel;
     LocalTester localtester;
-    Solver(int N, int W, int C, int K, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), c(C), w(W), k(K), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel) { }
+    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel) { }
 
     void solve(){
         cout << "#solve start" << endl;
-        priority_queue<pair<int, int>> Pque;
-        for(auto house:HousePos){
-            vec2 source = WaterPos[NearestWater(house)];
+        priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
+        for(int i=0; i<k; i++){
+            pair<int, int> nearest = NearestWater(HousePos[i]);
+            Pque.push({nearest.second, i, WaterPos[nearest.first]});
         }
         
-        for(auto house:HousePos){
-            vec2 source = WaterPos[NearestWater(house)]; //最も近い水源を見つける
+        while(!Pque.empty()){
+            tuple<int, int, vec2> tmptuple = Pque.top();
+            Pque.pop();
+            vec2 house = HousePos[get<1>(tmptuple)];
+            vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
             move(house, source);
         }
+        // for(auto house:HousePos){
+        //     vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける
+        //     move(house, source);
+        // }
         return;
     }
 
-    int NearestWater(vec2 house){
+    pair<int, int> NearestWater(vec2 house){
         int mindis=1e5, nearest=-1;
         for(int i=0; i<WaterPos.size(); i++){
             int cmpdis = abs(house.y - WaterPos[i].y) + abs(house.x - WaterPos[i].x);
@@ -129,7 +144,7 @@ struct Solver
                 nearest = i;
             }
         }
-        return nearest;
+        return {nearest, mindis};
     }
 
     void move(vec2 start, vec2 goal){
@@ -145,9 +160,11 @@ struct Solver
     void destruct(int row, int column) {
         const int power = 50;
 //Serve
+        // if(field.is_broken[row][column]) return;
         // while (!field.is_broken[row][column]) {
         //     Response result = field.query(row, column, power);
 //Local
+        if(localtester.is_broken[row][column]) return;
         while (!localtester.is_broken[row][column]) {
             Response result = localtester.LocalQuery(row, column, power);
             if (result == Response::finish) {
@@ -178,8 +195,8 @@ int main(){
     }
     for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
     for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
-    for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
-    for(auto v:HousePos) cout << v.y << " " << v.x << endl;
+    // for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
+    // for(auto v:HousePos) cout << v.y << " " << v.x << endl;
     for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
     Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
     solver.solve();
