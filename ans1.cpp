@@ -10,8 +10,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed005w1k10.txt";
-string outputfile = "seed005w1k10out_ans1.txt";
+string inputfile = "seed006w1k10.txt";
+string outputfile = "seed006w1k10out_ans1.txt";
 
 struct vec2 {int y, x;};
 enum class Response {not_broken, broken, finish, invalid};
