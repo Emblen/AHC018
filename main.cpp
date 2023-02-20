@@ -3,6 +3,8 @@
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <cstdlib>
+#include <cmath>
 using namespace std;
 
 string inputfile = "seed000w3k5.txt";
@@ -52,15 +54,52 @@ struct LocalTester
 
 struct Solver
 {
-    int n, c; 
+    int n, w, c; 
     vector<vec2> WaterPos, HousePos;
-    Solver(int N, const vector<vec2>& source_pos, const vector<vec2>& house_pos, int C) : n(N), WaterPos(WaterPos), HousePos(HousePos), c(C) { }
+    Field field;
+    Solver(int N, int W, int C, const vector<vec2>& source_pos, const vector<vec2>& house_pos) : n(N), c(C), w(W),  WaterPos(WaterPos), HousePos(HousePos), field(N, C) { }
 
+    void solve(){
+        for(auto house:HousePos){
+            vec2 source = WaterPos[NearestWater(house)]; //最も近い水源を見つける
+            move(house, source);
+        }
+    }
+
+    int NearestWater(vec2 house){
+        int mindis=1e4, nearest=-1;
+        for(int i=0; i<w; i++){
+            int cmpdis = abs(house.y - WaterPos[i].y) + abs(house.x - WaterPos[i].x);
+            if(mindis > cmpdis){
+                mindis = cmpdis;
+                nearest = i;
+            }
+        }
+    }
+
+    void move(vec2 start, vec2 goal){
+        // down/up
+        if(start.y < goal.y) for(int y = start.y; y < goal.y; y++) destruct(y, start.x);
+        else for(int y = start.y; y > goal.y; y--) destruct(y, start.x);
+        // right/left
+        if(start.x < goal.x) for(int x = start.x; x < goal.x; x++) destruct(goal.y, x);
+        else for(int x = start.x; x > goal.x; x--) destruct(goal.y, x);
+    }
+
+    void destruct(int row, int column) {
+        const int power = 50;
+        while (!field.is_broken[row][column]) {
+            Response result = field.query(row, column, power);
+            if (result == Response::finish) {
+                cerr << "total_cost=" << field.total_cost << endl;
+                exit(0);
+            } else if (result == Response::invalid) {
+                cerr << "invalid: y=" << row << " x=" << column << endl;
+                exit(1);
+            }
+        }
+    }
 };
-
-
-
-
 
 int main(){
     ifstream InputFile(inputfile);
