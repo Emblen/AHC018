@@ -11,8 +11,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed006w1k10.txt";
-string outputfile = "seed006w1k10out2.txt";
+string inputfile = "seed000w4k10.txt";
+string outputfile = "seed000w4k10out.txt";
 
 struct vec2 
 {
