@@ -13,8 +13,9 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "test/seed006w1k10.txt";
-string outputfile = "test/seed006w1k10map.txt";
+string inputfile = "test/seed005w1k10.txt";
+string outputfile = "test/seed005w1k10map.txt";
+string mapname = "makemap/mapdata005.txt";
 
 struct vec2 
 {
@@ -57,15 +58,17 @@ struct Field
 
 struct LocalTester
 {
-    const string outfilename;
+    const string outfilename, mapfilename;
     int n, c;
     long long total_cost;
     int repdotnum;
     vector<vector<int>> is_broken;
     vector<vec2> WaterPos, HousePos;
     vector<vector<int>> DestLevel, mapdata;
+    vector<vector<bool>> mapcheck;
+    vector<pair<int, int>> dxdy;
     LocalTester(int N, int C, const vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), outfilename(outputfile), repdotnum(20), mapdata(N, vector<int>(N, 0)) { }
+    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), outfilename(outputfile), mapfilename(mapname), repdotnum(20), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{0,1},{0,-1}, {1,0}, {-1,0}}) { }
 
     Response LocalQuery(int y, int x, int power){//掘削の出力、DestLevel、is_brokenの管理
         total_cost += power + c;
@@ -113,13 +116,14 @@ struct LocalTester
                     Response result = LocalQuery(y, x, power);
                     if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = 500;
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1),300);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
         }
         verticalthred();
         horizontalthred();
+        assignmapvalue();
         outmap();
     }
 
@@ -136,6 +140,7 @@ struct LocalTester
                 for(int k=0; k<blocknum; k++){
                     int y = repy + k;
                     mapdata[y][repx] = mapdata[repy][repx] + (diffneighbor/blocknum)*k;
+                    mapcheck[y][repx] = true;
                     // cout << y << " " << repx << " " << mapdata[y][repx] << endl;
                 }
             }
@@ -154,7 +159,45 @@ struct LocalTester
                 for(int k=0; k<blocknum; k++){
                     int x = repx + k;
                     mapdata[repy][x] = mapdata[repy][repx] + (diffneighbor/blocknum)*k;
-                    cout << repy << " " << x << " " << mapdata[repy][x] << endl;
+                    mapcheck[repy][x] = true;
+                    // cout << repy << " " << x << " " << mapdata[repy][x] << endl;
+                }
+            }
+        }
+    }
+    void assignmapvalue(){
+        // //縦方向に近傍の平均値をとる
+        // for(int x=1; x<n; x++){
+        //     for(int y=1; y<n; y++){
+        //         if(mapcheck[y][x]) continue;
+        //         int ischeckednum = 0; //上下左右の値が決まっているか
+        //         int value = 0;
+        //         for(auto v:dxdy){
+        //             if(y+v.first<0 || y+v.first>=n || x+v.second<0 || x+v.second>=n || !mapcheck[y+v.first][x+v.second]) continue;
+        //             ischeckednum++;
+        //             value += mapdata[y+v.first][x+v.second];
+        //         }
+        //         mapdata[y][x] = value/ischeckednum;          
+        //         mapcheck[y][x] = true;
+        //         // cout << y << " " << x << " " << mapdata[y][x] << endl;      
+        //     }
+        // }
+
+        int blocknum = n/repdotnum; //隣の代表点との距離
+        // version2
+        for(int x=1; x<n; x++){
+            if(x%blocknum==0) continue;
+            for(int j=0; j<repdotnum; j++){
+                int repy = blocknum*j;
+                int diffneighbor;
+                if(j==repdotnum-1) for(int k=1; k<blocknum; k++) mapdata[repy+k][x] = (mapdata[repy][x] + mapdata[repy+k][x-1])/2;
+                else{
+                    diffneighbor = mapdata[repy+10][x] - mapdata[repy][x];
+                    for(int k=1; k<blocknum; k++){
+                        mapdata[repy+k][x] = mapdata[repy][x] + (diffneighbor/blocknum)*k;
+                        mapcheck[repy+k][x] = true;
+                        // cout << repy+k << " " << x << " " << mapdata[repy+k][x] << endl;
+                    }
                 }
             }
         }
@@ -166,7 +209,7 @@ struct LocalTester
 
     void outmap(){
         ofstream Map;
-        Map.open("makemap/mapdata005.txt");
+        Map.open(mapname);
         for(int i=0; i<n; i++){
             for(int j=0; j<n; j++){
                 Map << mapdata[i][j] << " ";
