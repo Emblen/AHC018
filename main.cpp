@@ -51,7 +51,6 @@ struct Dijkstra
         while(true){
             pair<int, vec2> pv = Pque.top();
             Pque.pop();
-            isminimum[pv.second.y][pv.second.x] = true;
 
             if(isWaterPos[pv.second.y][pv.second.x]){
                 path.push_back({{pv.second.y, pv.second.x}, Map[pv.second.y][pv.second.x]});
@@ -69,7 +68,10 @@ struct Dijkstra
                     cost[nvy][nvx] = newcost;
                     parent[nvy][nvx] = {pv.second.y, pv.second.x};
                 }
+                Pque.push({cost[nvy][nvx], {nvy, nvx}});
             }
+
+            isminimum[pv.second.y][pv.second.x] = true; //最短距離確定
         }
         vec2 pathv = path[0].first;
         while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
@@ -381,42 +383,48 @@ struct Solver
         localtester.makemap();
         cout << localtester.total_cost << endl;
     
-        // for(auto house:HousePos){
+
+        priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
+        for(int i=0; i<k; i++){
+            pair<int, int> nearest = NearestWater(HousePos[i]);
+            Pque.push({nearest.second, i, WaterPos[nearest.first]});
+        }
+
+        // while(!Pque.empty()){
+        //     tuple<int, int, vec2> tmptuple = Pque.top();
+        //     Pque.pop();
+        //     vec2 house = HousePos[get<1>(tmptuple)];
+
         //     vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
-        //     for(auto v:shortestpath){
-        //         destruct(v.first.y, v.first.x, v.second);
-        //     }
+        //     for(auto v:shortestpath) cout << v.first.y << " " << v.first.x << endl;
+            // for(auto v:shortestpath){
+            //     destruct(v.first.y, v.first.x, v.second);
+            // }
+
+            // vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
+            // move(house, source);
         // }
+        tuple<int, int, vec2> tmptuple = Pque.top();
+        Pque.pop();
+        vec2 house = HousePos[get<1>(tmptuple)];
+        vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
+        for(auto v:shortestpath) cout << v.first.y << " " << v.first.x << endl;
+
+        return;
+    
     }
 
-
-//         priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
-//         for(int i=0; i<k; i++){
-//             pair<int, int> nearest = NearestWater(HousePos[i]);
-//             Pque.push({nearest.second, i, WaterPos[nearest.first]});
-//         }
-        
-//         while(!Pque.empty()){
-//             tuple<int, int, vec2> tmptuple = Pque.top();
-//             Pque.pop();
-//             vec2 house = HousePos[get<1>(tmptuple)];
-//             vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
-//             move(house, source);
-//         }
-//         return;
-//     }
-
-//     pair<int, int> NearestWater(vec2 house){
-//         int mindis=1e5, nearest=-1;
-//         for(int i=0; i<WaterPos.size(); i++){
-//             int cmpdis = abs(house.y - WaterPos[i].y) + abs(house.x - WaterPos[i].x);
-//             if(mindis > cmpdis){
-//                 mindis = cmpdis;
-//                 nearest = i;
-//             }
-//         }
-//         return {nearest, mindis};
-//     }
+    pair<int, int> NearestWater(vec2 house){
+        int mindis=1e5, nearest=-1;
+        for(int i=0; i<WaterPos.size(); i++){
+            int cmpdis = abs(house.y - WaterPos[i].y) + abs(house.x - WaterPos[i].x);
+            if(mindis > cmpdis){
+                mindis = cmpdis;
+                nearest = i;
+            }
+        }
+        return {nearest, mindis};
+    }
 
 //     void move(vec2 start, vec2 goal){
 //         //goalに向かって縦方向、横方向に直線移動する
