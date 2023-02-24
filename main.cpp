@@ -14,8 +14,8 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e7
 string inputfile = "test/seed005w1k10.txt";
-string outputfile = "test/seed005w1k10map.txt";
-string mapname = "makemap/mapdata005.txt";
+string outputfile = "test/seed005w1k10dijkstra.txt";
+string mapname = "makemap/mapdata005dijk.txt";
 
 struct vec2 
 {
@@ -28,23 +28,57 @@ enum class Response {not_broken, broken, finish, invalid};
 
 struct Dijkstra
 {
+    int n;
     vector<vector<int>> Map;
-    int n, c;
-    vector<vec2> WaterPos, HousePos, dxdy;//parentは親の頂点座標の配列で、最親は家の座標
+    vector<vec2> WaterPos, HousePos, dxdy;
     vector<vector<bool>> isWaterPos;
-    Dijkstra(int N, int C, vector<vec2>& waterpos, const vector<vec2>& housepos, const vector<vector<int>>& map)
-    : n(N), c(C), WaterPos(waterpos), HousePos(housepos), Map(map), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
+    Dijkstra(int N, vector<vec2>& waterpos, const vector<vec2>& housepos, const vector<vector<int>>& map)
+    : n(N), WaterPos(waterpos), HousePos(housepos), Map(map), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
 
-    void InitPos(){
-        for(auto water:WaterPos) isWaterPos[water.y][water.x] = true;
-    }
-    //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば親のベクトルを返して終了。
+    //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
     vector<pair<vec2, int>> searchmin(vec2 house){
-        vector<pair<vec2, int>> parent; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
-        vector<vector<bool>> isminimum(n, vector<bool>(n, false));
-        vector<vector<int>> dist(n, vector<int>(n, INF));
+        for(auto water:WaterPos) isWaterPos[water.y][water.x] = true; // 水源を確認
+
+        vector<pair<vec2, int>> path; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
+        vector<vector<bool>> isminimum(n, vector<bool>(n, false)); //最小値が決定しているか
+        vector<vector<int>> cost(n, vector<int>(n, INF)); //各点のコスト
+        vector<vector<vec2>> parent(n, vector<vec2>(n, {-1,-1}));//各点の親
+
+        priority_queue<pair<int, vec2>, vector<pair<int, vec2>>, greater<pair<int, vec2>>> Pque;
+        cost[house.y][house.x] = 0;
+        parent[house.y][house.x] = {house.y, house.x};//houseの親はhouse
+        Pque.push({0, house});
+        while(true){
+            pair<int, vec2> pv = Pque.top();
+            Pque.pop();
+            isminimum[pv.second.y][pv.second.x] = true;
+
+            if(isWaterPos[pv.second.y][pv.second.x]){
+                path.push_back({{pv.second.y, pv.second.x}, Map[pv.second.y][pv.second.x]});
+                break;
+            }
+
+            for(auto nv:dxdy){
+                int nvy = pv.second.y + nv.y;
+                int nvx = pv.second.x + nv.x;
+                if(nvy<0 || nvy>=n || nvx<0 || nvx>=n || isminimum[nvy][nvx]) continue;
+
+                //コストの比較
+                int newcost = min(cost[nvy][nvx], cost[pv.second.y][pv.second.x] + Map[nvy][nvx]);
+                if(cost[nvy][nvx] > newcost){
+                    cost[nvy][nvx] = newcost;
+                    parent[nvy][nvx] = {pv.second.y, pv.second.x};
+                }
+            }
+        }
+        vec2 pathv = path[0].first;
+        while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
+            int pvy = parent[pathv.y][pathv.x].y;
+            int pvx = parent[pathv.y][pathv.x].x;
+            path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+        }
+        return path;
     }
-    
 };
 
 struct Field
@@ -333,12 +367,13 @@ struct Solver
     Field field;
 //Submit
     // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
-    // : n(N), c(C), w(W), k(K), WaterPos(source_pos), HousePos(house_pos), field(N, C) { }
+    // : n(N), c(C), w(W), k(K), WaterPos(source_pos), HousePos(house_pos), field(N, C), dijkstra(N, source_pos, house_pos, field.mapdata) { }
 //Local    
     vector<vector<int>> DestLevel;
     LocalTester localtester;
+    Dijkstra dijkstra;
     Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel) { }
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), dijkstra(N, source_pos, house_pos, localtester.mapdata) { }
 
     void solve(){
         cout << "#solve start" << endl;
@@ -346,7 +381,13 @@ struct Solver
         localtester.makemap();
         cout << localtester.total_cost << endl;
     
-
+        for(auto house:HousePos){
+            vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
+            for(auto v:shortestpath){
+                destruct(v.first.y, v.first.x, v.second);
+            }
+        }
+    }
 
 
 //         priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
@@ -387,25 +428,24 @@ struct Solver
 //         else for(int x = start.x; x >= goal.x; x--) destruct(goal.y, x);
 //     }
 
-//     void destruct(int row, int column) {
-//         const int power = 80;
-// //Submit
-//         // if(field.is_broken[row][column]) return;
-//         // while (!field.is_broken[row][column]) {
-//         //     Response result = field.query(row, column, power);
-// //Local
-//         if(localtester.is_broken[row][column]) return;
-//         while (!localtester.is_broken[row][column]) {
-//             Response result = localtester.LocalQuery(row, column, power);
-//             if (result == Response::finish) {
-//                 cerr << "#total_cost=" << field.total_cost << endl;
-//                 exit(0);
-//             } else if (result == Response::invalid) {
-//                 cerr << "#invalid: y=" << row << " x=" << column << endl;
-//                 exit(1);
-//             }
-//         }
-//         WaterPos.push_back({row, column}); //掘削した岩盤の座標を水源に追加
+    void destruct(int row, int column, int power) {
+//Submit
+        // if(field.is_broken[row][column]) return;
+        // while (!field.is_broken[row][column]) {
+        //     Response result = field.query(row, column, power);
+//Local
+        if(localtester.is_broken[row][column]) return;
+        while (!localtester.is_broken[row][column]) {
+            Response result = localtester.LocalQuery(row, column, power);
+            if (result == Response::finish) {
+                cerr << "#total_cost=" << field.total_cost << endl;
+                exit(0);
+            } else if (result == Response::invalid) {
+                cerr << "#invalid: y=" << row << " x=" << column << endl;
+                exit(1);
+            }
+        }
+        WaterPos.push_back({row, column}); //掘削した岩盤の座標を水源に追加
     }
 };
 
