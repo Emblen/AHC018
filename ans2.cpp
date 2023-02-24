@@ -11,8 +11,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "test/seed005w1k10.txt";
-string outputfile = "test/seed005w1k10out2.txt";
+string inputfile = "seed005w1k10.txt";
+string outputfile = "seed005w1k10out.txt";
 
 struct vec2 
 {
@@ -194,7 +194,7 @@ int main(){
     for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
     // for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
     // for(auto v:HousePos) cout << v.y << " " << v.x << endl;
-    // for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
+    for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
     Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
     solver.solve();
 

@@ -12,7 +12,7 @@
 #include <time.h>
 using namespace std;
 #define all(x) (x).begin(),(x).end()
-
+#define INF 1e7
 string inputfile = "test/seed005w1k10.txt";
 string outputfile = "test/seed005w1k10map.txt";
 string mapname = "makemap/mapdata005.txt";
@@ -26,15 +26,39 @@ struct vec2
 };
 enum class Response {not_broken, broken, finish, invalid};
 
+struct Dijkstra
+{
+    vector<vector<int>> Map;
+    int n, c;
+    vector<vec2> WaterPos, HousePos, dxdy;//parentは親の頂点座標の配列で、最親は家の座標
+    vector<vector<bool>> isWaterPos;
+    Dijkstra(int N, int C, vector<vec2>& waterpos, const vector<vec2>& housepos, const vector<vector<int>>& map)
+    : n(N), c(C), WaterPos(waterpos), HousePos(housepos), Map(map), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
+
+    void InitPos(){
+        for(auto water:WaterPos) isWaterPos[water.y][water.x] = true;
+    }
+    //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば親のベクトルを返して終了。
+    void searchmin(vec2 house){
+        vector<pair<int, vec2>> parent; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
+        vector<vector<bool>> ismin(n, vector<bool>(n, false));
+        vector<vector<int>> cost(n, vector<int>(n, INF));
+
+        
+    }
+    
+};
+
 struct Field
 {
-    int n;
-    int c;
-    vector<vector<int>> is_broken;
+    int n, c, repdotnum;
+    vector<vector<int>> is_broken, mapdata;
     long long total_cost;
+    vector<vector<bool>> mapcheck;
+    vector<pair<int, int>> dxdy;
 
     Field(int N, int C) 
-    : n(N), c(C), is_broken(N, vector<int>(N, 0)), total_cost(0) {}
+    : n(N), c(C), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(20), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{0,1},{0,-1}, {1,0}, {-1,0}}) {}
 
     Response query(int y, int x, int power) {
         total_cost += power + c;
@@ -53,6 +77,91 @@ struct Field
         default:
             return Response::invalid;
         }
+    }
+
+    void makemap(){//代表点の掘削を行い、マップを作成する
+        for(int i=0; i<repdotnum; i++){
+            for(int j=0; j<repdotnum; j++){
+                for(int k=0; k<3; k++){
+                    int y = n/repdotnum*i;
+                    int x = n/repdotnum*j;
+                    if(is_broken[y][x]) continue;
+
+                    int power = 50;
+                    Response result = query(y, x, power);
+                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    //壊れなかったら適当に大きな数字にする
+                }
+            }
+        }
+        verticalthred();
+        horizontalthred();
+        assignmapvalue();
+    }
+
+    void verticalthred(){
+        int blocknum = n/repdotnum; //隣の代表点との距離
+        for(int i=0; i<repdotnum; i++){
+            int repx = blocknum*i;//横方向の代表点
+            for(int j=0; j<repdotnum; j++){
+                int repy = blocknum*j;
+                int diffneighbor;
+                if(j==repdotnum-1) diffneighbor = 0;
+                else diffneighbor = mapdata[repy+10][repx] - mapdata[repy][repx];
+
+                for(int k=0; k<blocknum; k++){
+                    int y = repy + k;
+                    mapdata[y][repx] = mapdata[repy][repx] + (diffneighbor/blocknum)*k;
+                    mapcheck[y][repx] = true;
+                    // cout << y << " " << repx << " " << mapdata[y][repx] << endl;
+                }
+            }
+        }
+    }
+    void horizontalthred(){
+        int blocknum = n/repdotnum; //隣の代表点との距離
+        for(int i=0; i<repdotnum; i++){
+            int repy = blocknum*i;//横方向の代表点
+            for(int j=0; j<repdotnum; j++){
+                int repx = blocknum*j;
+                int diffneighbor;
+                if(j==repdotnum-1) diffneighbor = 0;
+                else diffneighbor = mapdata[repy][repx+10] - mapdata[repy][repx];
+
+                for(int k=0; k<blocknum; k++){
+                    int x = repx + k;
+                    mapdata[repy][x] = mapdata[repy][repx] + (diffneighbor/blocknum)*k;
+                    mapcheck[repy][x] = true;
+                    // cout << repy << " " << x << " " << mapdata[repy][x] << endl;
+                }
+            }
+        }
+    }
+    void assignmapvalue(){
+        int blocknum = n/repdotnum; //隣の代表点との距離
+        // version2
+        for(int x=1; x<n; x++){
+            if(x%blocknum==0) continue;
+            for(int j=0; j<repdotnum; j++){
+                int repy = blocknum*j;
+                int diffneighbor;
+                if(j==repdotnum-1) for(int k=1; k<blocknum; k++) mapdata[repy+k][x] = (mapdata[repy][x] + mapdata[repy+k][x-1])/2;
+                else{
+                    diffneighbor = mapdata[repy+10][x] - mapdata[repy][x];
+                    for(int k=1; k<blocknum; k++){
+                        mapdata[repy+k][x] = mapdata[repy][x] + (diffneighbor/blocknum)*k;
+                        mapcheck[repy+k][x] = true;
+                        // cout << repy+k << " " << x << " " << mapdata[repy+k][x] << endl;
+                    }
+                }
+            }
+        }
+    }
+
+    int Random(int min, int max){
+	    return min + (max - min) * rand() / RAND_MAX;
     }
 };
 
@@ -116,7 +225,7 @@ struct LocalTester
                     Response result = LocalQuery(y, x, power);
                     if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1),300);
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
                     //壊れなかったら適当に大きな数字にする
                 }
             }
