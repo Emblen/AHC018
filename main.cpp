@@ -13,9 +13,9 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e7
-string inputfile = "test/seed005w1k10.txt";
-string outputfile = "test/seed005w1k10dijkstra.txt";
-string mapname = "makemap/mapdata005dijk.txt";
+string inputfile = "test/seed005/seed005w1k10.txt";
+string outputfile = "test/seed005/seed005w1k10dijkstra.txt";
+string mapname = "makemap/map005.txt";
 
 struct vec2 
 {
@@ -257,7 +257,7 @@ struct LocalTester
                     Response result = LocalQuery(y, x, power);
                     if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 500);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -381,12 +381,12 @@ struct Solver
         localtester.makemap();
         cout << localtester.total_cost << endl;
     
-        for(auto house:HousePos){
-            vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
-            for(auto v:shortestpath){
-                destruct(v.first.y, v.first.x, v.second);
-            }
-        }
+        // for(auto house:HousePos){
+        //     vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
+        //     for(auto v:shortestpath){
+        //         destruct(v.first.y, v.first.x, v.second);
+        //     }
+        // }
     }
 
 
@@ -437,6 +437,7 @@ struct Solver
         if(localtester.is_broken[row][column]) return;
         while (!localtester.is_broken[row][column]) {
             Response result = localtester.LocalQuery(row, column, power);
+
             if (result == Response::finish) {
                 cerr << "#total_cost=" << field.total_cost << endl;
                 exit(0);
