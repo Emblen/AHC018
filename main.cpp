@@ -39,12 +39,10 @@ struct Dijkstra
         for(auto water:WaterPos) isWaterPos[water.y][water.x] = true;
     }
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば親のベクトルを返して終了。
-    void searchmin(vec2 house){
-        vector<pair<int, vec2>> parent; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
-        vector<vector<bool>> ismin(n, vector<bool>(n, false));
-        vector<vector<int>> cost(n, vector<int>(n, INF));
-
-        
+    vector<pair<vec2, int>> searchmin(vec2 house){
+        vector<pair<vec2, int>> parent; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
+        vector<vector<bool>> isminimum(n, vector<bool>(n, false));
+        vector<vector<int>> dist(n, vector<int>(n, INF));
     }
     
 };
