@@ -11,8 +11,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed005w1k10.txt";
-string outputfile = "seed005w1k10out.txt";
+string inputfile = "test/seed005/seed005w1k10.txt";
+string outputfile = "test/seed005/w1k10ans2-2.txt";
 
 struct vec2 
 {
@@ -145,6 +145,28 @@ struct Solver
     }
 
     void move(vec2 start, vec2 goal){
+
+        // int diffy = goal.y - start.y;
+        // int diffx = goal.x - start.x;
+        // int y = start.y; int x = start.x;
+        // destruct(y, x);
+        // while(diffy!=0 && diffx!=0){
+        //     if(diffy>0) {destruct(++y, x); diffy--;}
+        //     else {destruct(--y, x); diffy++;}
+            
+        //     if(diffx>0) {destruct(y, ++x); diffx--;}
+        //     else {destruct(y, --x); diffx++;}
+        // }
+        // cout << diffy << " " << diffx << endl;
+        // if(diffy==0){
+        //     if(diffx>0) for(x; x<=goal.x; x++) destruct(y, x);
+        //     else for(x; x<=goal.x; x--) destruct(y, x);
+        // }
+        // if(diffx==0){
+        //     if(diffy>0) for(y; y<=goal.y; y++) destruct(y, x);
+        //     else for(y; y<=goal.y; y--) destruct(y, x);
+        // }
+
         //goalに向かって縦方向、横方向に直線移動する
         // down/up
         if(start.y < goal.y) for(int y = start.y; y <= goal.y; y++) destruct(y, start.x);
@@ -155,7 +177,7 @@ struct Solver
     }
 
     void destruct(int row, int column) {
-        const int power = 80;
+        const int power = 50;
 //Serve
         // if(field.is_broken[row][column]) return;
         // while (!field.is_broken[row][column]) {

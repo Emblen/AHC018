@@ -32,8 +32,8 @@ struct Dijkstra
     vector<vector<int>> Map;
     vector<vec2> WaterPos, HousePos, dxdy;
     vector<vector<bool>> isWaterPos;
-    Dijkstra(int N, vector<vec2>& waterpos, const vector<vec2>& housepos, const vector<vector<int>>& map)
-    : n(N), WaterPos(waterpos), HousePos(housepos), Map(map), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
+    Dijkstra(int N, vector<vec2>& waterpos, const vector<vec2>& housepos)
+    : n(N), WaterPos(waterpos), HousePos(housepos), Map(n, vector<int>(n, 0)), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
     vector<pair<vec2, int>> searchmin(vec2 house){
@@ -48,15 +48,17 @@ struct Dijkstra
         cost[house.y][house.x] = 0;
         parent[house.y][house.x] = {house.y, house.x};//houseの親はhouse
         Pque.push({0, house});
+
         while(true){
             pair<int, vec2> pv = Pque.top();
             Pque.pop();
 
+            cout << pv.second.y << " " << pv.second.x << " " <<  pv.first << endl;
             if(isWaterPos[pv.second.y][pv.second.x]){
                 path.push_back({{pv.second.y, pv.second.x}, Map[pv.second.y][pv.second.x]});
                 break;
             }
-
+            
             for(auto nv:dxdy){
                 int nvy = pv.second.y + nv.y;
                 int nvx = pv.second.x + nv.x;
@@ -74,14 +76,25 @@ struct Dijkstra
             isminimum[pv.second.y][pv.second.x] = true; //最短距離確定
         }
         vec2 pathv = path[0].first;
-        while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
-            int pvy = parent[pathv.y][pathv.x].y;
-            int pvx = parent[pathv.y][pathv.x].x;
-            path.push_back({{pvy, pvx}, Map[pvy][pvx]});
-        }
+        cout << pathv.y << " " << pathv.x << " " << cost[pathv.y][pathv.x] << endl;
+        // while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
+        //     int pvy = parent[pathv.y][pathv.x].y;
+        //     int pvx = parent[pathv.y][pathv.x].x;
+        //     path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+        // }
         return path;
     }
+
+    void readmap(){
+        ifstream mapfile(mapname);
+        for(int i=0; i<n; i++){
+            for(int j=0; j<n; j++){
+                mapfile >> Map[i][j];
+            }
+        }
+    }
 };
+
 
 struct Field
 {
@@ -257,7 +270,7 @@ struct LocalTester
 
                     int power = 50;
                     Response result = LocalQuery(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+                    if(result == Response::broken) mapdata[y][x] = Random(power*k+power/2, power*(k+1));
 
                     if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 500);
                     //壊れなかったら適当に大きな数字にする
@@ -375,7 +388,7 @@ struct Solver
     LocalTester localtester;
     Dijkstra dijkstra;
     Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), dijkstra(N, source_pos, house_pos, localtester.mapdata) { }
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), dijkstra(N, source_pos, house_pos) { }
 
     void solve(){
         cout << "#solve start" << endl;
@@ -383,13 +396,20 @@ struct Solver
         localtester.makemap();
         cout << localtester.total_cost << endl;
     
-
+        dijkstra.readmap();
         priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
         for(int i=0; i<k; i++){
             pair<int, int> nearest = NearestWater(HousePos[i]);
             Pque.push({nearest.second, i, WaterPos[nearest.first]});
         }
 
+        while(!Pque.empty()){
+            tuple<int, int, vec2> tmptuple = Pque.top();
+            Pque.pop();
+            vec2 house = HousePos[get<1>(tmptuple)];
+            vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
+            // move(house, source);
+        }
         // while(!Pque.empty()){
         //     tuple<int, int, vec2> tmptuple = Pque.top();
         //     Pque.pop();
@@ -397,18 +417,13 @@ struct Solver
 
         //     vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
         //     for(auto v:shortestpath) cout << v.first.y << " " << v.first.x << endl;
-            // for(auto v:shortestpath){
-            //     destruct(v.first.y, v.first.x, v.second);
-            // }
+        //     for(auto v:shortestpath){
+        //         destruct(v.first.y, v.first.x, v.second);
+        //     }
 
-            // vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
+        //     vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
             // move(house, source);
         // }
-        tuple<int, int, vec2> tmptuple = Pque.top();
-        Pque.pop();
-        vec2 house = HousePos[get<1>(tmptuple)];
-        vector<pair<vec2, int>> shortestpath = dijkstra.searchmin(house);
-        for(auto v:shortestpath) cout << v.first.y << " " << v.first.x << endl;
 
         return;
     
@@ -455,6 +470,10 @@ struct Solver
             }
         }
         WaterPos.push_back({row, column}); //掘削した岩盤の座標を水源に追加
+    }
+
+    void greedy(vec2 house, vec2 source){
+
     }
 };
 
