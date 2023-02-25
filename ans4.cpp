@@ -387,26 +387,24 @@ struct Solver
     vector<pair<int, int>> dxdy;
     Dijkstra dijkstra;
 //Submit
-    // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
-    // : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), Map(N, vector<int>(N, 0)) { }
+    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), Map(N, vector<int>(N, 0)), dijkstra(n, source_pos, house_pos) { }
 //Local    
-    vector<vector<int>> DestLevel;
-    LocalTester localtester;
-    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}), dijkstra(n, source_pos, house_pos) { }
+    // vector<vector<int>> DestLevel;
+    // LocalTester localtester;
+    // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
+    // : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}), dijkstra(n, source_pos, house_pos) { }
 
     void solve(){
         cout << "#solve start" << endl;
 //Submit
-        // field.makemap();
-        // cout << "#mapcost: " << field.total_cost << endl;
-        // readmap();
-        // cout << "#read map" << endl;
+        field.makemap();
+        cout << "#mapcost: " << field.total_cost << endl;
+        readmap();
 //Local
-        localtester.makemap();
-        cout << "#mapcost: " << localtester.total_cost << endl;
-        readmaplocal();
-        cout << "#read map" << endl;
+        // localtester.makemap();
+        // cout << "#mapcost: " << localtester.total_cost << endl;
+        // readmaplocal();
 
         priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
         for(int i=0; i<k; i++){
@@ -421,11 +419,13 @@ struct Solver
             vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
 
             vector<pair<vec2, int>> path = dijkstra.searchmin(house, source, Map, WaterPos);//ここでダイクストラ
-            cout << "#OK" << endl;
             for(auto v:path){
                 int y = v.first.y;
                 int x = v.first.x;
-                if(localtester.is_broken[y][x]) continue;
+//Submit
+                if(field.is_broken[y][x]) continue;
+//Local
+                // if(localtester.is_broken[y][x]) continue;
                 destruct(y, x, Map[y][x]);
             }
         }
@@ -501,18 +501,18 @@ struct Solver
 
     void destruct(int row, int column, int power) {        
 //Submit
-        // if(field.is_broken[row][column]) return;
+        if(field.is_broken[row][column]) return;
 
-        // double times = 1.0;
-        // double plus = (double)c/128;
-        // while (!field.is_broken[row][column]) {
-        //     Response result = field.query(row, column, (int)(power*times));
-//Local
-        if(localtester.is_broken[row][column]) return;
         double times = 1.0;
         double plus = (double)c/128;
-        while (!localtester.is_broken[row][column]) {
-            Response result = localtester.LocalQuery(row, column, min(800, (int)(power*times)));
+        while (!field.is_broken[row][column]) {
+            Response result = field.query(row, column, (int)(power*times));
+//Local
+        // if(localtester.is_broken[row][column]) return;
+        // double times = 1.0;
+        // double plus = (double)c/128;
+        // while (!localtester.is_broken[row][column]) {
+        //     Response result = localtester.LocalQuery(row, column, min(800, (int)(power*times)));
             
             if (result == Response::finish) exit(0);
             else if (result == Response::invalid) {
@@ -543,33 +543,33 @@ struct Solver
 
 int main(){
 //Local
-    ifstream InputFile(inputfile);
-    int n, w, k, c;
-    InputFile >> n >> w >> k >> c;
+    // ifstream InputFile(inputfile);
+    // int n, w, k, c;
+    // InputFile >> n >> w >> k >> c;
 
-    vector<vector<int>> DestLevel(n, vector<int>(n));
-    vector<vec2> WaterPos(w), HousePos(k); 
+    // vector<vector<int>> DestLevel(n, vector<int>(n));
+    // vector<vec2> WaterPos(w), HousePos(k); 
 
-    for(int i=0; i<n; i++){
-        for(int j=0; j<n; j++){
-            InputFile >> DestLevel[i][j];
-        }
-    }
-    for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
-    for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
+    // for(int i=0; i<n; i++){
+    //     for(int j=0; j<n; j++){
+    //         InputFile >> DestLevel[i][j];
+    //     }
+    // }
+    // for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
+    // for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
 
-    Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
-    solver.solve();
-    cout << solver.localtester.total_cost << endl;
+    // Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
+    // solver.solve();
+    // cout << solver.localtester.total_cost << endl;
 
 //Submit
-    // int n, w, k, c;
-    // cin >> n >> w >> k >> c;
-    // vector<vec2> WaterPos(w), HousePos(k); 
-    // for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
-    // for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
-    // Solver solver(n, w, k, c, WaterPos, HousePos);
-    // solver.solve();
+    int n, w, k, c;
+    cin >> n >> w >> k >> c;
+    vector<vec2> WaterPos(w), HousePos(k); 
+    for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
+    for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
+    Solver solver(n, w, k, c, WaterPos, HousePos);
+    solver.solve();
     
     cout << "#finished" << endl;
     return 0;
