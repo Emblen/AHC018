@@ -3,11 +3,12 @@
 #include <string>
 #include <queue>
 #include <fstream>
+#include <tuple>
 #define INF 1e6
 using namespace std;
 
-string mapname = "makemap/mapdata.txt";
-string inputfile = "test/seed000/seed000w1k10.txt";
+string mapname = "makemap/mapdata000.txt";
+string inputfile = "test/seed000/seed000w4k10c1.txt";
 
 struct vec2 
 {
@@ -28,18 +29,18 @@ struct Dijkstra
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
     vector<pair<vec2, int>> searchmin(vec2 house, vec2 water){
-        //探索範囲の削減。最も近い水源と家の座標を用いる。
+        //探索範囲の削減。最も近い水源と家の座標を用いる。いらない。
         int miny = 0, minx = 0, maxy = n, maxx = n; 
-        int diffy = water.y - house.y;
-        int diffx = water.x - house.x;
-        if(abs(diffy) > abs(diffx)){
-            if(diffy > 0) miny = house.y;
-            else maxy = house.y;
-        }
-        else{
-            if(diffx > 0) minx = house.x;
-            else maxx = house.x;
-        }
+        // int diffy = water.y - house.y;
+        // int diffx = water.x - house.x;
+        // if(abs(diffy) > abs(diffx)){
+        //     if(diffy > 0) miny = house.y;
+        //     else maxy = house.y;
+        // }
+        // else{
+        //     if(diffx > 0) minx = house.x;
+        //     else maxx = house.x;
+        // }
         
         for(auto water:WaterPos) isWaterPos[water.y][water.x] = true; // 水源を確認
 
@@ -87,6 +88,7 @@ struct Dijkstra
             int pvy = parent[pathv.y][pathv.x].y;
             int pvx = parent[pathv.y][pathv.x].x;
             path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+            WaterPos.push_back({pvy, pvx});
             pathv.y = pvy; 
             pathv.x = pvx;
         }
@@ -100,6 +102,28 @@ struct Dijkstra
                 mapfile >> Map[i][j];
             }
         }
+    }
+};
+
+struct Solver
+{
+    int n, w, k, c; 
+    vector<vec2> WaterPos, HousePos;
+    vector<vector<int>> Map;
+    Dijkstra dijkstra;
+    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), Map(N, vector<int>(N, 0)), dijkstra(N, source_pos, house_pos) { }
+
+    pair<int, int> NearestWater(vec2 house){
+        int mindis=1e5, nearest=-1;
+        for(int i=0; i<WaterPos.size(); i++){
+            int cmpdis = abs(house.y - WaterPos[i].y) + abs(house.x - WaterPos[i].x);
+            if(mindis > cmpdis){
+                mindis = cmpdis;
+                nearest = i;
+            }
+        }
+        return {nearest, mindis};
     }
 };
 
@@ -120,14 +144,24 @@ int main(){
     for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
     for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
 
-    Dijkstra dijkstra(n, WaterPos, HousePos);
-    dijkstra.readmap();
+    Solver solver(n, w, k, c, WaterPos, HousePos);
+    solver.dijkstra.readmap();
 
     ofstream output("testdijkstra.txt");
-    output << WaterPos[0].y << " " << WaterPos[0].x << " " << 20 << endl;
+    for(int i=0; i<w; i++) output << WaterPos[i].y << " " << WaterPos[i].x << " " << 50 << endl;
+
+    priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
     for(int i=0; i<k; i++){
+        pair<int, int> nearest = solver.NearestWater(HousePos[i]);
+        Pque.push({nearest.second, i, WaterPos[nearest.first]});
+    }
+    while(!Pque.empty()){
+        tuple<int, int, vec2> tmptuple = Pque.top();
+        Pque.pop();
+        vec2 house = HousePos[get<1>(tmptuple)];
+        vec2 source = WaterPos[solver.NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
         vector<pair<vec2, int>> path;
-        path = dijkstra.searchmin(HousePos[i], WaterPos[0]);
+        path = solver.dijkstra.searchmin(house, WaterPos[0]);
 
         for(int i=1; i<path.size(); i++){
             int y = path[i].first.y;
@@ -138,6 +172,7 @@ int main(){
             isbroken[y][x] = true;
         }
     }
+    
     cout << "finished" << endl;
     return 0;
 }

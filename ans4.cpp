@@ -28,26 +28,25 @@ enum class Response {not_broken, broken, finish, invalid};
 struct Dijkstra
 {
     int n;
-    vector<vector<int>> Map;
     vector<vec2> WaterPos, HousePos, dxdy;
     vector<vector<bool>> isWaterPos;
     Dijkstra(int N, vector<vec2>& waterpos, const vector<vec2>& housepos)
-    : n(N), WaterPos(waterpos), HousePos(housepos), Map(n, vector<int>(n, 0)), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
+    : n(N), WaterPos(waterpos), HousePos(housepos), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
-    vector<pair<vec2, int>> searchmin(vec2 house, vec2 water){
-        //探索範囲の削減。最も近い水源と家の座標を用いる。
+    vector<pair<vec2, int>> searchmin(vec2 house, vec2 water, const vector<vector<int>>& Map){
+        //探索範囲の削減。最も近い水源と家の座標を用いる。いらない。
         int miny = 0, minx = 0, maxy = n, maxx = n; 
-        int diffy = water.y - house.y;
-        int diffx = water.x - house.x;
-        if(abs(diffy) > abs(diffx)){
-            if(diffy > 0) miny = house.y;
-            else maxy = house.y;
-        }
-        else{
-            if(diffx > 0) minx = house.x;
-            else maxx = house.x;
-        }
+        // int diffy = water.y - house.y;
+        // int diffx = water.x - house.x;
+        // if(abs(diffy) > abs(diffx)){
+        //     if(diffy > 0) miny = house.y;
+        //     else maxy = house.y;
+        // }
+        // else{
+        //     if(diffx > 0) minx = house.x;
+        //     else maxx = house.x;
+        // }
         
         for(auto water:WaterPos) isWaterPos[water.y][water.x] = true; // 水源を確認
 
@@ -68,10 +67,6 @@ struct Dijkstra
             int pvx = pv.second.x;
             // cout << pvy << " " << pvx << " " <<  pv.first << "parent: " << parent[pvy][pvx].y << ", " <<  parent[pvy][pvx].x << endl;
             //水源に到達したら探索を終了
-            if(isWaterPos[pvy][pvx]){
-                path.push_back({{pvy, pvx}, Map[pvy][pvx]});
-                break;
-            }
             if(isminimum[pvy][pvx]) continue;
             
             for(auto nv:dxdy){
@@ -95,19 +90,11 @@ struct Dijkstra
             int pvy = parent[pathv.y][pathv.x].y;
             int pvx = parent[pathv.y][pathv.x].x;
             path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+            WaterPos.push_back({pvy, pvx});
             pathv.y = pvy; 
             pathv.x = pvx;
         }
         return path;
-    }
-
-    void readmap(){
-        ifstream mapfile(mapname);
-        for(int i=0; i<n; i++){
-            for(int j=0; j<n; j++){
-                mapfile >> Map[i][j];
-            }
-        }
     }
 };
 
@@ -397,6 +384,7 @@ struct Solver
     vector<vector<int>> Map;
     Field field;
     vector<pair<int, int>> dxdy;
+    Dijkstra dijkstra;
 //Submit
     // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
     // : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), Map(N, vector<int>(N, 0)) { }
@@ -404,7 +392,7 @@ struct Solver
     vector<vector<int>> DestLevel;
     LocalTester localtester;
     Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}) { }
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}), dijkstra(n, source_pos, house_pos) { }
 
     void solve(){
         cout << "#solve start" << endl;
@@ -414,8 +402,8 @@ struct Solver
         // readmap();
         // cout << "#read map" << endl;
 //Local
-        // localtester.makemap();
-        // cout << "#mapcost: " << localtester.total_cost << endl;
+        localtester.makemap();
+        cout << "#mapcost: " << localtester.total_cost << endl;
         readmaplocal();
         cout << "#read map" << endl;
 
@@ -430,7 +418,14 @@ struct Solver
             Pque.pop();
             vec2 house = HousePos[get<1>(tmptuple)];
             vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
-            move(house, source);
+
+            vector<pair<vec2, int>> path = dijkstra.searchmin(house, source, Map);//ここでダイクストラ
+            for(auto v:path){
+                int y = v.first.y;
+                int x = v.first.x;
+                if(localtester.is_broken[y][x]) continue;
+                destruct(y, x, Map[y][x]);
+            }
         }
         return;
     }
@@ -449,49 +444,49 @@ struct Solver
 
     void move(vec2 start, vec2 goal){
 
-        int diffy = goal.y - start.y;
-        int diffx = goal.x - start.x;
-        int y = start.y; int x = start.x;
-        destruct(y, x);
-        while(diffy!=0 && diffx!=0){
-            if(diffy>0){
-                if(diffx>0){
-                    int py = y+1;
-                    int px = x+1;
-                    if(Map[py][x] < Map[y][px]) {destruct(py, x); y=py; diffy--;}
-                    else {destruct(y, px); x=px; diffx--;};
-                }
-                else{
-                    int py = y+1;
-                    int mx = x-1;
-                    if(Map[py][x] < Map[y][mx]) {destruct(++y, x); y=py; diffy--;}
-                    else {destruct(y, mx); x=mx; diffx++;};
-                }
-            }
-            else{
-                if(diffx>0){
-                    int my = y-1;
-                    int px = x+1;
-                    if(Map[my][x] < Map[y][px]) {destruct(my, x); y=my; diffy++;}
-                    else {destruct(y, px); x=px; diffx--;}
-                }
-                else{
-                    int my = y-1;
-                    int mx = x-1;
-                    if(Map[my][x] < Map[y][mx]) {destruct(my, x); y=my; diffy++;}
-                    else {destruct(y, mx); x=mx; diffx++;}
-                }
-            }
-        }
+        // int diffy = goal.y - start.y;
+        // int diffx = goal.x - start.x;
+        // int y = start.y; int x = start.x;
+        // destruct(y, x);
+        // while(diffy!=0 && diffx!=0){
+        //     if(diffy>0){
+        //         if(diffx>0){
+        //             int py = y+1;
+        //             int px = x+1;
+        //             if(Map[py][x] < Map[y][px]) {destruct(py, x); y=py; diffy--;}
+        //             else {destruct(y, px); x=px; diffx--;};
+        //         }
+        //         else{
+        //             int py = y+1;
+        //             int mx = x-1;
+        //             if(Map[py][x] < Map[y][mx]) {destruct(++y, x); y=py; diffy--;}
+        //             else {destruct(y, mx); x=mx; diffx++;};
+        //         }
+        //     }
+        //     else{
+        //         if(diffx>0){
+        //             int my = y-1;
+        //             int px = x+1;
+        //             if(Map[my][x] < Map[y][px]) {destruct(my, x); y=my; diffy++;}
+        //             else {destruct(y, px); x=px; diffx--;}
+        //         }
+        //         else{
+        //             int my = y-1;
+        //             int mx = x-1;
+        //             if(Map[my][x] < Map[y][mx]) {destruct(my, x); y=my; diffy++;}
+        //             else {destruct(y, mx); x=mx; diffx++;}
+        //         }
+        //     }
+        // }
         
-        if(diffy==0){
-            if(diffx>0) for(x; x<=goal.x; x++) destruct(y, x);
-            else for(x; x>=goal.x; x--) destruct(y, x);
-        }
-        else{
-            if(diffy>0) for(y; y<=goal.y; y++) destruct(y, x);
-            else for(y; y>=goal.y; y--) destruct(y, x);
-        }
+        // if(diffy==0){
+        //     if(diffx>0) for(x; x<=goal.x; x++) destruct(y, x);
+        //     else for(x; x>=goal.x; x--) destruct(y, x);
+        // }
+        // else{
+        //     if(diffy>0) for(y; y<=goal.y; y++) destruct(y, x);
+        //     else for(y; y>=goal.y; y--) destruct(y, x);
+        // }
 
         //goalに向かって縦方向、横方向に直線移動する
         // down/up
@@ -502,9 +497,7 @@ struct Solver
         // else for(int x = start.x; x >= goal.x; x--) destruct(goal.y, x);
     }
 
-    void destruct(int row, int column) {
-        int power = 50;
-        
+    void destruct(int row, int column, int power) {        
 //Submit
         // if(field.is_broken[row][column]) return;
 
@@ -530,7 +523,7 @@ struct Solver
     }
 
     void readmaplocal(){
-        ifstream mapfile("makemap/mapdata.txt");
+        ifstream mapfile(mapname);
         for(int i=0; i<n; i++){
             for(int j=0; j<n; j++){
                 mapfile >> Map[i][j];
@@ -552,7 +545,6 @@ int main(){
     int n, w, k, c;
     InputFile >> n >> w >> k >> c;
 
-    cout << n << " " << w << " " << k << " " << c << endl;
     vector<vector<int>> DestLevel(n, vector<int>(n));
     vector<vec2> WaterPos(w), HousePos(k); 
 
@@ -563,11 +555,10 @@ int main(){
     }
     for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
     for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
-    // for(auto v:WaterPos) cout << v.y << " " << v.x << endl;
-    // for(auto v:HousePos) cout << v.y << " " << v.x << endl;
-    // for(auto house:HousePos) cout << "(" << house.y << ", " << house.x << ") = " << DestLevel[house.y][house.x] << endl;
+
     Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
     solver.solve();
+    cout << solver.localtester.total_cost << endl;
 
 //Submit
     // int n, w, k, c;
@@ -577,7 +568,7 @@ int main(){
     // for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
     // Solver solver(n, w, k, c, WaterPos, HousePos);
     // solver.solve();
-    cout << solver.localtester.total_cost << endl;
+    
     cout << "#finished" << endl;
     return 0;
 }
