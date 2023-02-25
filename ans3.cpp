@@ -12,7 +12,7 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 
 string inputfile = "test/seed000/seed000w1k10.txt";
-string outputfile = "test/seed000/w1k10ans2.txt";
+string outputfile = "test/seed000/w1k10ans3.txt";
 
 struct vec2 
 {

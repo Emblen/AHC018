@@ -11,8 +11,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed005w1k10.txt";
-string outputfile = "seed005w1k10out.txt";
+string inputfile = "test/seed005/seed005w1k10.txt";
+string outputfile = "test/seed005/w1k10ans2.txt";
 
 struct vec2 
 {
@@ -155,7 +155,7 @@ struct Solver
     }
 
     void destruct(int row, int column) {
-        const int power = 80;
+        const int power = 50;
 //Serve
         // if(field.is_broken[row][column]) return;
         // while (!field.is_broken[row][column]) {
@@ -207,6 +207,6 @@ int main(){
     // Solver solver(n, w, k, c, WaterPos, HousePos);
     // solver.solve();
 
-    // cout << "#finished" << endl;
-    // return 0;
+    cout << "#finished" << endl;
+    return 0;
 }
