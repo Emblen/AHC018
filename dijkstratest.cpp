@@ -7,8 +7,8 @@
 #define INF 1e6
 using namespace std;
 
-string mapname = "makemap/mapdata000.txt";
-string inputfile = "test/seed000/seed000w4k10c1.txt";
+string mapname = "makemap/mapdata005.txt";
+string inputfile = "test/seed005/seed005w3k5.txt";
 
 struct vec2 
 {

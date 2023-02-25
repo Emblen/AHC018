@@ -8,6 +8,8 @@
 #include <set>
 #include <queue>
 #include <tuple>
+#include <random>
+#include <time.h>
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e6
@@ -35,7 +37,6 @@ struct Dijkstra
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
     vector<pair<vec2, int>> searchmin(vec2 house, vec2 nearest, const vector<vector<int>>& Map, vector<vec2> WaterNow){
-        //探索範囲の削減。最も近い水源と家の座標を用いる。いらない。
         int miny = 0, minx = 0, maxy = n, maxx = n; 
         int diffy = nearest.y - house.y;
         int diffx = nearest.x - house.x;
@@ -132,18 +133,22 @@ struct Field
     }
 
     void makemap(){//代表点の掘削を行い、マップを作成する
+        int maxloop = 1;
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<3; k++){
+                for(int k=0; k<maxloop; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 50;
+                    int power = 100;
                     Response result = query(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+                    if(result == Response::broken){
+                        if(k==0) mapdata[y][x] = Random(10, power*(k+1));
+                        else mapdata[y][x] = Random(power*k, power*(k+1));
+                    }
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==maxloop-1 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -265,18 +270,22 @@ struct LocalTester
     } 
 
     void makemap(){//代表点の掘削を行い、マップを作成する
+        int maxloop = 1;
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<3; k++){
+                for(int k=0; k<maxloop; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 50;
+                    int power = 100;
                     Response result = LocalQuery(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+                    if(result == Response::broken){
+                        if(k==0) mapdata[y][x] = Random(10, power*(k+1));
+                        else mapdata[y][x] = Random(power*k, power*(k+1));
+                    }
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==maxloop-1 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -542,6 +551,7 @@ struct Solver
 };
 
 int main(){
+    srand((unsigned int)time(NULL));
 //Local
     // ifstream InputFile(inputfile);
     // int n, w, k, c;

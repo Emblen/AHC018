@@ -14,8 +14,8 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e6
 
-string inputfile = "test/seed000/seed000w4k10.txt";
-string outputfile = "test/seed000/w4k10c128ans5.txt";
+string inputfile = "test/seed000/seed000w1k10.txt";
+string outputfile = "test/seed000/w1k10ans4.txt";
 string mapname = "makemap/mapnow.txt";
 
 struct vec2 
@@ -136,16 +136,16 @@ struct Field
     void makemap(){//代表点の掘削を行い、マップを作成する
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<1; k++){
+                for(int k=0; k<3; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 100;
+                    int power = 50;
                     Response result = query(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = Random(10, power*(k+1));
+                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==0 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -267,22 +267,18 @@ struct LocalTester
     } 
 
     void makemap(){//代表点の掘削を行い、マップを作成する
-        int maxloop = 1;
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<maxloop; k++){
+                for(int k=0; k<3; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 100;
+                    int power = 50;
                     Response result = LocalQuery(y, x, power);
-                    if(result == Response::broken){
-                        if(k==0) mapdata[y][x] = Random(10, power*(k+1));
-                        else mapdata[y][x] = Random(power*k, power*(k+1));
-                    }
+                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==maxloop-1 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -393,24 +389,24 @@ struct Solver
     vector<pair<int, int>> dxdy;
     Dijkstra dijkstra;
 //Submit
-    // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
-    // : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), Map(N, vector<int>(N, 0)), dijkstra(n, source_pos, house_pos) { }
+    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos) 
+    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), field(N, C), Map(N, vector<int>(N, 0)), dijkstra(n, source_pos, house_pos) { }
 //Local    
-    vector<vector<int>> DestLevel;
-    LocalTester localtester;
-    Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}), dijkstra(n, source_pos, house_pos) { }
+    // vector<vector<int>> DestLevel;
+    // LocalTester localtester;
+    // Solver(int N, int W, int K, int C, vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
+    // : n(N), w(W), k(K), c(C), WaterPos(source_pos), HousePos(house_pos), localtester(N, C, source_pos, house_pos, destlevel), DestLevel(destlevel), Map(N, vector<int>(N, 0)), field(N, C), dxdy({{1,0}, {0,-1}, {-1,0}, {0,1}}), dijkstra(n, source_pos, house_pos) { }
 
     void solve(){
         cout << "#solve start" << endl;
 //Submit
-        // field.makemap();
-        // cout << "#mapcost: " << field.total_cost << endl;
-        // readmap();
+        field.makemap();
+        cout << "#mapcost: " << field.total_cost << endl;
+        readmap();
 //Local
-        localtester.makemap();
-        cout << "#mapcost: " << localtester.total_cost << endl;
-        readmaplocal();
+        // localtester.makemap();
+        // cout << "#mapcost: " << localtester.total_cost << endl;
+        // readmaplocal();
 
         priority_queue<tuple<int, int, vec2>, vector<tuple<int, int, vec2>>, greater<tuple<int, int, vec2>>> Pque;
         for(int i=0; i<k; i++){
@@ -429,9 +425,9 @@ struct Solver
                 int y = v.first.y;
                 int x = v.first.x;
 //Submit
-                // if(field.is_broken[y][x]) continue;
+                if(field.is_broken[y][x]) continue;
 //Local
-                if(localtester.is_broken[y][x]) continue;
+                // if(localtester.is_broken[y][x]) continue;
                 destruct(y, x, Map[y][x]);
             }
         }
@@ -507,18 +503,18 @@ struct Solver
 
     void destruct(int row, int column, int power) {        
 //Submit
-        // if(field.is_broken[row][column]) return;
+        if(field.is_broken[row][column]) return;
 
-        // double times = 1.0;
-        // double plus = (double)c/128;
-        // while (!field.is_broken[row][column]) {
-        //     Response result = field.query(row, column, (int)(power*times));
-//Local
-        if(localtester.is_broken[row][column]) return;
         double times = 1.0;
         double plus = (double)c/128;
-        while (!localtester.is_broken[row][column]) {
-            Response result = localtester.LocalQuery(row, column, min(800, (int)(power*times)));
+        while (!field.is_broken[row][column]) {
+            Response result = field.query(row, column, (int)(power*times));
+//Local
+        // if(localtester.is_broken[row][column]) return;
+        // double times = 1.0;
+        // double plus = (double)c/128;
+        // while (!localtester.is_broken[row][column]) {
+        //     Response result = localtester.LocalQuery(row, column, min(800, (int)(power*times)));
             
             if (result == Response::finish) exit(0);
             else if (result == Response::invalid) {
@@ -550,34 +546,36 @@ struct Solver
 int main(){
     srand((unsigned int)time(NULL));
 //Local
-    ifstream InputFile(inputfile);
-    int n, w, k, c;
-    InputFile >> n >> w >> k >> c;
+    // ifstream InputFile(inputfile);
+    // int n, w, k, c;
+    // InputFile >> n >> w >> k >> c;
 
-    vector<vector<int>> DestLevel(n, vector<int>(n));
-    vector<vec2> WaterPos(w), HousePos(k); 
+    // vector<vector<int>> DestLevel(n, vector<int>(n));
+    // vector<vec2> WaterPos(w), HousePos(k); 
 
-    for(int i=0; i<n; i++){
-        for(int j=0; j<n; j++){
-            InputFile >> DestLevel[i][j];
-        }
-    }
-    for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
-    for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
+    // for(int i=0; i<n; i++){
+    //     for(int j=0; j<n; j++){
+    //         InputFile >> DestLevel[i][j];
+    //     }
+    // }
+    // for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
+    // for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
 
-    Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
-    solver.solve();
-    cout << solver.localtester.total_cost << endl;
+    // Solver solver(n, w, k, c, WaterPos, HousePos, DestLevel);
+    // solver.solve();
+    // cout << solver.localtester.total_cost << endl;
 
 //Submit
-    // int n, w, k, c;
-    // cin >> n >> w >> k >> c;
-    // vector<vec2> WaterPos(w), HousePos(k); 
-    // for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
-    // for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
-    // Solver solver(n, w, k, c, WaterPos, HousePos);
-    // solver.solve();
-    
+    int n, w, k, c;
+    cin >> n >> w >> k >> c;
+    vector<vec2> WaterPos(w), HousePos(k); 
+    for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
+    for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
+
+    Solver solver(n, w, k, c, WaterPos, HousePos);
+    solver.solve();
+
+    cout << solver.field.total_cost << endl;
     cout << "#finished" << endl;
     return 0;
 }
