@@ -12,8 +12,8 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e6
 
-string inputfile = "test/seed005/seed005w1k10.txt";
-string outputfile = "test/seed005/w1k10ans4.txt";
+string inputfile = "test/seed000/seed000w1k10.txt";
+string outputfile = "test/seed000/w1k10ans4.txt";
 string mapname = "makemap/mapnow.txt";
 
 struct vec2 
@@ -274,9 +274,9 @@ struct LocalTester
 
                     int power = 50;
                     Response result = LocalQuery(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = Random(power*k+power/2, power*(k+1));
+                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -568,9 +568,11 @@ int main(){
     vector<vec2> WaterPos(w), HousePos(k); 
     for(int i=0; i<w; i++) cin >> WaterPos[i].y >> WaterPos[i].x;
     for(int i=0; i<k; i++) cin >> HousePos[i].y >> HousePos[i].x;
+
     Solver solver(n, w, k, c, WaterPos, HousePos);
     solver.solve();
-    
+
+    cout << solver.field.total_cost << endl;
     cout << "#finished" << endl;
     return 0;
 }
