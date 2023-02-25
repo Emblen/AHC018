@@ -11,8 +11,8 @@
 using namespace std;
 #define all(x) (x).begin(),(x).end()
 
-string inputfile = "seed005w1k10.txt";
-string outputfile = "seed005w1k10out.txt";
+string inputfile = "test/seed000/seed000w1k10.txt";
+string outputfile = "test/seed000/w1k10ans2.txt";
 
 struct vec2 
 {
@@ -145,6 +145,28 @@ struct Solver
     }
 
     void move(vec2 start, vec2 goal){
+
+        // int diffy = goal.y - start.y;
+        // int diffx = goal.x - start.x;
+        // int y = start.y; int x = start.x;
+        // destruct(y, x);
+        // while(diffy!=0 && diffx!=0){
+        //     if(diffy>0) {destruct(++y, x); diffy--;}
+        //     else {destruct(--y, x); diffy++;}
+            
+        //     if(diffx>0) {destruct(y, ++x); diffx--;}
+        //     else {destruct(y, --x); diffx++;}
+        // }
+        // cout << diffy << " " << diffx << endl;
+        // if(diffy==0){
+        //     if(diffx>0) for(x; x<=goal.x; x++) destruct(y, x);
+        //     else for(x; x<=goal.x; x--) destruct(y, x);
+        // }
+        // if(diffx==0){
+        //     if(diffy>0) for(y; y<=goal.y; y++) destruct(y, x);
+        //     else for(y; y<=goal.y; y--) destruct(y, x);
+        // }
+
         //goalに向かって縦方向、横方向に直線移動する
         // down/up
         if(start.y < goal.y) for(int y = start.y; y <= goal.y; y++) destruct(y, start.x);
@@ -155,15 +177,21 @@ struct Solver
     }
 
     void destruct(int row, int column) {
-        const int power = 80;
+        int power = 50;
 //Serve
         // if(field.is_broken[row][column]) return;
+
+        // double times = 1.0;
+        // double plus = (double)c/128;
         // while (!field.is_broken[row][column]) {
-        //     Response result = field.query(row, column, power);
+        //     Response result = field.query(row, column, (int)(power*times));
 //Local
         if(localtester.is_broken[row][column]) return;
+        double times = 1.0;
+        double plus = (double)c/128;
         while (!localtester.is_broken[row][column]) {
-            Response result = localtester.LocalQuery(row, column, power);
+            Response result = localtester.LocalQuery(row, column, (int)(power*times));
+            // Response result = localtester.LocalQuery(row, column, power);
             if (result == Response::finish) {
                 cerr << "#total_cost=" << field.total_cost << endl;
                 exit(0);
@@ -171,6 +199,7 @@ struct Solver
                 cerr << "#invalid: y=" << row << " x=" << column << endl;
                 exit(1);
             }
+            times += plus;
         }
         WaterPos.push_back({row, column}); //掘削した岩盤の座標を水源に追加
     }
@@ -207,6 +236,6 @@ int main(){
     // Solver solver(n, w, k, c, WaterPos, HousePos);
     // solver.solve();
 
-    // cout << "#finished" << endl;
-    // return 0;
+    cout << "#finished" << endl;
+    return 0;
 }
