@@ -6,10 +6,8 @@
 #define INF 1e6
 using namespace std;
 
-string mapname = "makemap/map005.txt";
-string inputfile = "test/seed005/seed005w1k10.txt";
-
-
+string mapname = "makemap/mapdata.txt";
+string inputfile = "test/seed000/seed000w1k10.txt";
 
 struct vec2 
 {
@@ -29,7 +27,20 @@ struct Dijkstra
     : n(N), WaterPos(waterpos), HousePos(housepos), Map(n, vector<int>(n, 0)), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
-    vector<pair<vec2, int>> searchmin(vec2 house){
+    vector<pair<vec2, int>> searchmin(vec2 house, vec2 water){
+        //探索範囲の削減。最も近い水源と家の座標を用いる。
+        int miny = 0, minx = 0, maxy = n, maxx = n; 
+        int diffy = water.y - house.y;
+        int diffx = water.x - house.x;
+        if(abs(diffy) > abs(diffx)){
+            if(diffy > 0) miny = house.y;
+            else maxy = house.y;
+        }
+        else{
+            if(diffx > 0) minx = house.x;
+            else maxx = house.x;
+        }
+        
         for(auto water:WaterPos) isWaterPos[water.y][water.x] = true; // 水源を確認
 
         vector<pair<vec2, int>> path; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
@@ -38,43 +49,47 @@ struct Dijkstra
         vector<vector<vec2>> parent(n, vector<vec2>(n, {-1,-1}));//各点の親
 
         priority_queue<pair<int, vec2>, vector<pair<int, vec2>>, greater<pair<int, vec2>>> Pque;
-        cost[house.y][house.x] = 0;
+        cost[house.y][house.x] = Map[house.y][house.x];
         parent[house.y][house.x] = {house.y, house.x};//houseの親はhouse
         Pque.push({0, house});
 
         while(true){
             pair<int, vec2> pv = Pque.top();
             Pque.pop();
-
-            cout << pv.second.y << " " << pv.second.x << " " <<  pv.first << endl;
-            if(isWaterPos[pv.second.y][pv.second.x]){
-                path.push_back({{pv.second.y, pv.second.x}, Map[pv.second.y][pv.second.x]});
+            int pvy = pv.second.y;
+            int pvx = pv.second.x;
+            // cout << pvy << " " << pvx << " " <<  pv.first << "parent: " << parent[pvy][pvx].y << ", " <<  parent[pvy][pvx].x << endl;
+            //水源に到達したら探索を終了
+            if(isWaterPos[pvy][pvx]){
+                path.push_back({{pvy, pvx}, Map[pvy][pvx]});
                 break;
             }
+            if(isminimum[pvy][pvx]) continue;
             
             for(auto nv:dxdy){
-                int nvy = pv.second.y + nv.y;
-                int nvx = pv.second.x + nv.x;
-                if(nvy<0 || nvy>=n || nvx<0 || nvx>=n || isminimum[nvy][nvx]) continue;
+                int nvy = pvy + nv.y;
+                int nvx = pvx + nv.x;
+                if(nvy<miny || nvy>=maxy || nvx<minx || nvx>=maxx || isminimum[nvy][nvx]) continue;
 
                 //コストの比較
-                int newcost = min(cost[nvy][nvx], cost[pv.second.y][pv.second.x] + Map[nvy][nvx]);
+                int newcost = min(cost[nvy][nvx], cost[pvy][pvx] + Map[nvy][nvx]);
                 if(cost[nvy][nvx] > newcost){
                     cost[nvy][nvx] = newcost;
-                    parent[nvy][nvx] = {pv.second.y, pv.second.x};
+                    parent[nvy][nvx] = {pvy, pvx};
                 }
                 Pque.push({cost[nvy][nvx], {nvy, nvx}});
             }
 
-            isminimum[pv.second.y][pv.second.x] = true; //最短距離確定
+            isminimum[pvy][pvx] = true; //最短距離確定
         }
         vec2 pathv = path[0].first;
-        cout << pathv.y << " " << pathv.x << " " << cost[pathv.y][pathv.x] << endl;
-        // while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
-        //     int pvy = parent[pathv.y][pathv.x].y;
-        //     int pvx = parent[pathv.y][pathv.x].x;
-        //     path.push_back({{pvy, pvx}, Map[pvy][pvx]});
-        // }
+        while(pathv.y!=parent[pathv.y][pathv.x].y || pathv.x!=parent[pathv.y][pathv.x].x){//houseの親はhouse
+            int pvy = parent[pathv.y][pathv.x].y;
+            int pvx = parent[pathv.y][pathv.x].x;
+            path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+            pathv.y = pvy; 
+            pathv.x = pvx;
+        }
         return path;
     }
 
@@ -93,9 +108,9 @@ int main(){
     int n, w, k, c;
     InputFile >> n >> w >> k >> c;
 
-    cout << n << " " << w << " " << k << " " << c << endl;
     vector<vector<int>> DestLevel(n, vector<int>(n));
     vector<vec2> WaterPos(w), HousePos(k); 
+    vector<vector<bool>> isbroken(n, vector<bool>(n, false));
 
     for(int i=0; i<n; i++){
         for(int j=0; j<n; j++){
@@ -105,6 +120,24 @@ int main(){
     for(int i=0; i<w; i++) InputFile >> WaterPos[i].y >> WaterPos[i].x;
     for(int i=0; i<k; i++) InputFile >> HousePos[i].y >> HousePos[i].x;
 
-    cout << "OK" << endl;
+    Dijkstra dijkstra(n, WaterPos, HousePos);
+    dijkstra.readmap();
+
+    ofstream output("testdijkstra.txt");
+    output << WaterPos[0].y << " " << WaterPos[0].x << " " << 20 << endl;
+    for(int i=0; i<k; i++){
+        vector<pair<vec2, int>> path;
+        path = dijkstra.searchmin(HousePos[i], WaterPos[0]);
+
+        for(int i=1; i<path.size(); i++){
+            int y = path[i].first.y;
+            int x = path[i].first.x;
+            if(isbroken[y][x]) continue;
+
+            output << y << " " << x << " " << path[i].second << endl;
+            isbroken[y][x] = true;
+        }
+    }
+    cout << "finished" << endl;
     return 0;
 }
