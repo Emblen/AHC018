@@ -12,9 +12,9 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e6
 
-string inputfile = "test/seed000/seed000w4k10c1.txt";
-string outputfile = "test/seed000/w4k10c1ans4.txt";
-string mapname = "makemap/mapdata.txt";
+string inputfile = "test/seed005/seed005w1k10.txt";
+string outputfile = "test/seed005/w1k10ans4.txt";
+string mapname = "makemap/mapnow.txt";
 
 struct vec2 
 {
@@ -34,21 +34,20 @@ struct Dijkstra
     : n(N), WaterPos(waterpos), HousePos(housepos), dxdy({{0,1},{0,-1},{1,0},{-1,0}}), isWaterPos(N, vector<bool>(N,false)) { }
 
     //家を始点、水源までの最短距離を求める。キューから取り出した点が水源であれば探索を終了。パスを求め、親と破壊コストの配列を返して終了。
-    vector<pair<vec2, int>> searchmin(vec2 house, vec2 water, const vector<vector<int>>& Map){
+    vector<pair<vec2, int>> searchmin(vec2 house, vec2 nearest, const vector<vector<int>>& Map, vector<vec2> WaterNow){
         //探索範囲の削減。最も近い水源と家の座標を用いる。いらない。
         int miny = 0, minx = 0, maxy = n, maxx = n; 
-        // int diffy = water.y - house.y;
-        // int diffx = water.x - house.x;
-        // if(abs(diffy) > abs(diffx)){
-        //     if(diffy > 0) miny = house.y;
-        //     else maxy = house.y;
-        // }
-        // else{
-        //     if(diffx > 0) minx = house.x;
-        //     else maxx = house.x;
-        // }
-        
-        for(auto water:WaterPos) isWaterPos[water.y][water.x] = true; // 水源を確認
+        int diffy = nearest.y - house.y;
+        int diffx = nearest.x - house.x;
+        if(abs(diffy) > abs(diffx)){
+            if(diffy > 0) miny = house.y;
+            else maxy = house.y;
+        }
+        else{
+            if(diffx > 0) minx = house.x;
+            else maxx = house.x;
+        }
+        for(auto water:WaterNow) isWaterPos[water.y][water.x] = true; // 水源を確認
 
         vector<pair<vec2, int>> path; //親の座標、破壊に必要なパワー。マップ値をパワーに設定する。
         vector<vector<bool>> isminimum(n, vector<bool>(n, false)); //最小値が決定しているか
@@ -67,6 +66,10 @@ struct Dijkstra
             int pvx = pv.second.x;
             // cout << pvy << " " << pvx << " " <<  pv.first << "parent: " << parent[pvy][pvx].y << ", " <<  parent[pvy][pvx].x << endl;
             //水源に到達したら探索を終了
+            if(isWaterPos[pvy][pvx]){
+                path.push_back({{pvy, pvx}, Map[pvy][pvx]});
+                break;
+            }
             if(isminimum[pvy][pvx]) continue;
             
             for(auto nv:dxdy){
@@ -264,8 +267,7 @@ struct LocalTester
     void makemap(){//代表点の掘削を行い、マップを作成する
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                int loopmax = 2;
-                for(int k=0; k<loopmax; k++){
+                for(int k=0; k<3; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
@@ -274,7 +276,7 @@ struct LocalTester
                     Response result = LocalQuery(y, x, power);
                     if(result == Response::broken) mapdata[y][x] = Random(power*k+power/2, power*(k+1));
 
-                    if(k==loopmax && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 500);
+                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -366,8 +368,7 @@ struct LocalTester
     }
 
     void outmap(){
-        ofstream Map;
-        Map.open(mapname);
+        ofstream Map(mapname);
         for(int i=0; i<n; i++){
             for(int j=0; j<n; j++){
                 Map << mapdata[i][j] << " ";
@@ -419,7 +420,8 @@ struct Solver
             vec2 house = HousePos[get<1>(tmptuple)];
             vec2 source = WaterPos[NearestWater(house).first]; //最も近い水源を見つける(更新されている可能性があるので再度探索)
 
-            vector<pair<vec2, int>> path = dijkstra.searchmin(house, source, Map);//ここでダイクストラ
+            vector<pair<vec2, int>> path = dijkstra.searchmin(house, source, Map, WaterPos);//ここでダイクストラ
+            cout << "#OK" << endl;
             for(auto v:path){
                 int y = v.first.y;
                 int x = v.first.x;

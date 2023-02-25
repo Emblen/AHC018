@@ -14,8 +14,8 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e7
 
-string SEED = "013";
-string mapname = "makemap/map"+SEED+".txt";
+string SEED = "000";
+string mapname = "makemap/map"+SEED+"test.txt";
 string inputfile = "test/seed"+SEED+"/seed"+SEED+"w1k10.txt";
 
 struct vec2 
