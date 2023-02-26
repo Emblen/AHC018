@@ -134,18 +134,22 @@ struct Field
     }
 
     void makemap(){//代表点の掘削を行い、マップを作成する
+        int maxloop = 1;
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<3; k++){
+                for(int k=0; k<maxloop; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 50;
+                    int power = 80;
                     Response result = query(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+                    if(result == Response::broken){
+                        if(k==0) mapdata[y][x] = Random(10, power*(k+1));
+                        else mapdata[y][x] = Random(power*k, power*(k+1));
+                    }
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==maxloop-1 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
                     //壊れなかったら適当に大きな数字にする
                 }
             }
@@ -267,18 +271,22 @@ struct LocalTester
     } 
 
     void makemap(){//代表点の掘削を行い、マップを作成する
+        int maxloop = 1;
         for(int i=0; i<repdotnum; i++){
             for(int j=0; j<repdotnum; j++){
-                for(int k=0; k<3; k++){
+                for(int k=0; k<maxloop; k++){
                     int y = n/repdotnum*i;
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 50;
+                    int power = 80;
                     Response result = LocalQuery(y, x, power);
-                    if(result == Response::broken) mapdata[y][x] = power*(k+1);
+                    if(result == Response::broken){
+                        if(k==0) mapdata[y][x] = Random(10, power*(k+1));
+                        else mapdata[y][x] = Random(power*k, power*(k+1));
+                    }
 
-                    if(k==2 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), power*2*(k+1));
+                    if(k==maxloop-1 && !is_broken[y][x]) mapdata[y][x] = Random(power*(k+1), 1000);
                     //壊れなかったら適当に大きな数字にする
                 }
             }

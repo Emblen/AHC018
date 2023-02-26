@@ -14,8 +14,8 @@ using namespace std;
 #define all(x) (x).begin(),(x).end()
 #define INF 1e6
 
-string inputfile = "test/seed000/seed000w1k10.txt";
-string outputfile = "test/seed000/w1k10ans5.txt";
+string inputfile = "test/seed022/seed022w1k10.txt";
+string outputfile = "test/seed022/w1k10ans6.txt";
 string mapname = "makemap/mapnow.txt";
 
 struct vec2 
@@ -142,7 +142,7 @@ struct Field
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 100;
+                    int power = 80;
                     Response result = query(y, x, power);
                     if(result == Response::broken){
                         if(k==0) mapdata[y][x] = Random(10, power*(k+1));
@@ -234,7 +234,7 @@ struct LocalTester
     vector<vector<bool>> mapcheck;
     vector<pair<int, int>> dxdy;
     LocalTester(int N, int C, const vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(25), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{1,0},{0,-1}, {-1,0}, {0,1}}) { }
+    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(20), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{1,0},{0,-1}, {-1,0}, {0,1}}) { }
 
     Response LocalQuery(int y, int x, int power){
         total_cost += power + c;
@@ -279,7 +279,7 @@ struct LocalTester
                     int x = n/repdotnum*j;
                     if(is_broken[y][x]) continue;
 
-                    int power = 100;
+                    int power = 80;
                     Response result = LocalQuery(y, x, power);
                     if(result == Response::broken){
                         if(k==0) mapdata[y][x] = Random(10, power*(k+1));
