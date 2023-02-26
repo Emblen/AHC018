@@ -112,7 +112,7 @@ struct Field
     vector<pair<int, int>> dxdy;
 
     Field(int N, int C) 
-    : n(N), c(C), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(20), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{0,1},{0,-1}, {1,0}, {-1,0}}) {}
+    : n(N), c(C), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(25), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{0,1},{0,-1}, {1,0}, {-1,0}}) {}
 
     Response query(int y, int x, int power) {
         total_cost += power + c;
@@ -163,7 +163,7 @@ struct Field
                 int repy = blocknum*j;
                 int diffneighbor;
                 if(j==repdotnum-1) diffneighbor = 0;
-                else diffneighbor = mapdata[repy+10][repx] - mapdata[repy][repx];
+                else diffneighbor = mapdata[repy+blocknum][repx] - mapdata[repy][repx];
 
                 for(int k=0; k<blocknum; k++){
                     int y = repy + k;
@@ -182,7 +182,7 @@ struct Field
                 int repx = blocknum*j;
                 int diffneighbor;
                 if(j==repdotnum-1) diffneighbor = 0;
-                else diffneighbor = mapdata[repy][repx+10] - mapdata[repy][repx];
+                else diffneighbor = mapdata[repy][repx+blocknum] - mapdata[repy][repx];
 
                 for(int k=0; k<blocknum; k++){
                     int x = repx + k;
@@ -201,9 +201,9 @@ struct Field
             for(int j=0; j<repdotnum; j++){
                 int repy = blocknum*j;
                 int diffneighbor;
-                if(j==repdotnum-1) for(int k=1; k<blocknum; k++) mapdata[repy+k][x] = (mapdata[repy][x] + mapdata[repy+k][x-1])/2;
+                if(j==repdotnum-1) for(int k=1; repy+k<n; k++) mapdata[repy+k][x] = (mapdata[repy][x] + mapdata[repy+k][x-1])/2;
                 else{
-                    diffneighbor = mapdata[repy+10][x] - mapdata[repy][x];
+                    diffneighbor = mapdata[repy+blocknum][x] - mapdata[repy][x];
                     for(int k=1; k<blocknum; k++){
                         mapdata[repy+k][x] = mapdata[repy][x] + (diffneighbor/blocknum)*k;
                         mapcheck[repy+k][x] = true;
@@ -230,7 +230,7 @@ struct LocalTester
     vector<vector<bool>> mapcheck;
     vector<pair<int, int>> dxdy;
     LocalTester(int N, int C, const vector<vec2>& source_pos, const vector<vec2>& house_pos, vector<vector<int>>& destlevel) 
-    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(20), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{1,0},{0,-1}, {-1,0}, {0,1}}) { }
+    : n(N), c(C), WaterPos(source_pos), HousePos(house_pos), DestLevel(destlevel), is_broken(N, vector<int>(N, 0)), total_cost(0), repdotnum(25), mapdata(N, vector<int>(N, 0)), mapcheck(N, vector<bool>(N, 0)), dxdy({{1,0},{0,-1}, {-1,0}, {0,1}}) { }
 
     Response LocalQuery(int y, int x, int power){
         total_cost += power + c;
